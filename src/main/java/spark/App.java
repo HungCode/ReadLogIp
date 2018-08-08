@@ -2,8 +2,10 @@ package spark;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FilterFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
@@ -23,6 +25,8 @@ import java.util.*;
 public class App {
 
     static HashMap<String,String> hm = new HashMap<>();
+    static HashMap<String,String> hm2 = new HashMap<>();
+
 
 
     public static void main(String[] args) {
@@ -60,10 +64,26 @@ public class App {
 //        list1.show();
         Dataset<Row> data1 = list1.join(finalSet,finalSet.col("ip").equalTo(list1.col("ip"))).where("count=1");
         Dataset<Row> data2 = list1.join(finalSet,finalSet.col("ip").equalTo(list1.col("ip"))).where("count=2");
-        data1.show(1000,false);
-        data2.show(1000,false);
+//        data1.show(1000,false);
+//        data2.show(1000,false);
 
-        //loc data2
+
+
+    /*
+        //loc data1
+        data1.foreach(row -> {
+            String ip = row.getString(0);
+            String location = row.getString(4);
+            String[] s = location.split(",");
+            String key;
+            if (s.length>2)
+                key=ip+":"+s[1];
+            else key = ip+":"+s[0];
+            if (hm.containsKey(key) && hm.get(key)!=s[0]) hm.put(key,"-");
+            else hm.put(key,s[0]);
+        });
+
+
         data2.foreach(row -> {
             String ip = row.getString(0);
             String location = row.getString(4);
@@ -75,17 +95,47 @@ public class App {
             if (hm.containsKey(key) && hm.get(key)!=s[0]) hm.put(key,"-");
             else hm.put(key,s[0]);
         });
+    */
+
+        // viet lai add hm
         data1.foreach(row -> {
             String ip = row.getString(0);
             String location = row.getString(4);
             String[] s = location.split(",");
             String key;
-            if (s.length>2)
-                key=ip+":"+s[1];
-            else key = ip+":"+s[0];
-            hm.put(key,s[0]);
+            if (s.length==3) {
+                key = ip + ":" + s[1];
+                if (hm.containsKey(key) && hm.get(key) != s[0]) hm.put(key, "-");
+                else hm.put(key, s[0]);
+            }
+            if (s.length==2){
+                key = ip + ":" + s[0];
+                if (hm2.containsKey(key) && hm2.get(key) != s[0]) hm2.put(key, "-");
+                else hm2.put(key, s[0]);
+            }
         });
-        System.out.println(hm.size());
+        data2.foreach(row -> {
+            String ip = row.getString(0);
+            String location = row.getString(4);
+            String[] s = location.split(",");
+            String key;
+            if (s.length==3) {
+                key = ip + ":" + s[1];
+                if (hm.containsKey(key) && hm.get(key) != s[0]) hm.put(key, "-");
+                else hm.put(key, s[0]);
+            }
+            if (s.length==2){
+                key = ip + ":" + s[0];
+                if (hm2.containsKey(key) && hm2.get(key) != s[0]) hm2.put(key, "-");
+                else hm2.put(key, s[0]);
+            }
+        });
+
+        hm2.forEach((ip_prov,city)->{
+            if (!hm.containsKey(ip_prov))
+                hm.put(ip_prov,city);
+        });
+
         cvsWriter(hm);
 
         spark.stop();
@@ -96,7 +146,7 @@ public class App {
         try {
             //We have to create the CSVPrinter class object
             LocalDate today = LocalDate.now();
-            Writer writer = Files.newBufferedWriter(Paths.get("ipgoogle_"+today.getDayOfMonth()+"_"+today.getMonth()+"_"+today.getYear()+".csv"));
+            Writer writer = Files.newBufferedWriter(Paths.get("/documents/ipdata/ipgoogle_"+today.getDayOfMonth()+"_"+today.getMonth()+"_"+today.getYear()+".csv"));
             CSVPrinter csvPrinter = new CSVPrinter(writer,
                     CSVFormat.DEFAULT.withHeader("ip", "city_name", "region_name"));
 
