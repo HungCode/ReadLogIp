@@ -136,6 +136,7 @@ public class App {
                 hm.put(ip_prov,city);
         });
 
+
         cvsWriter(hm);
 
         spark.stop();
@@ -146,16 +147,64 @@ public class App {
         try {
             //We have to create the CSVPrinter class object
             LocalDate today = LocalDate.now();
-            Writer writer = Files.newBufferedWriter(Paths.get("/documents/ipdata/ipgoogle_"+today.getDayOfMonth()+"_"+today.getMonth()+"_"+today.getYear()+".csv"));
+
+            // Nhung tinh co ten chua chuan(co chua province hay sai ki tu)
+            HashMap<String,String> lLocation = new HashMap<>();
+            lLocation.put("Bac Kan Province","Bac Kan");
+            lLocation.put("Binh Dinh Province","Binh Dinh");
+            lLocation.put("Bac Ninh Province","Bac Ninh");
+            lLocation.put("An Giang Province","An Giang");
+            lLocation.put("Binh Thuan Province","Binh Thuan");
+            lLocation.put("Djak Lak Province","Dak Lak");
+            lLocation.put("Djong Thap Province","Dong Thap");
+            lLocation.put("Gia Lai Province","Gia Lai");
+            lLocation.put("Ha Tinh Province","Ha Tinh");
+            lLocation.put("Haiphong","Hai Phong");
+            lLocation.put("Hanoi","Ha Noi");
+            lLocation.put("Hung Yen Province","Hung Yen");
+            lLocation.put("Khanh Hoa Province","Khanh Hoa");
+            lLocation.put("Kon Tum Province","Kon Tum");
+            lLocation.put("Lam Djong","Lam Dong");
+            lLocation.put("Long An Province","Long An");
+            lLocation.put("Ninh Binh Province","Ninh Binh");
+            lLocation.put("Ninh Thuan Province","Ninh Thuan");
+            lLocation.put("Phu Tho Province","Phu Tho");
+            lLocation.put("Phu Yen Province","Phu Yen");
+            lLocation.put("Quang Binh Province","Quang Binh");
+            lLocation.put("Quang Nam Province","Quang Nam");
+            lLocation.put("Quang Tri Province","Quang Tri");
+            lLocation.put("Tay Ninh Province","Tay Ninh");
+            lLocation.put("Vinh Phuc Province","Vinh Phuc");
+
+            //city
+            lLocation.put("Chau Djoc","Chau Doc");
+            lLocation.put("Djien Bien Phu","Dien Bien Phu");
+            lLocation.put("Djong Ha","Dong Ha");
+            lLocation.put("Djong Hoi","Dong Hoi");
+            lLocation.put("Phan Rangâ€“Thap Cham","Phan Rang-Thap Cham");
+            lLocation.put("Quang Tri Province","Quang Tri");
+            lLocation.put("Sa Djec","Sa Dec");
+            lLocation.put("Tam Djiep","Tam Diep");
+
+
+            // Ghi file
+
+            Writer writer = Files.newBufferedWriter(Paths.get("ipgoogle_"+today.getDayOfMonth()+"_"+today.getMonth()+"_"+today.getYear()+".csv"));
             CSVPrinter csvPrinter = new CSVPrinter(writer,
                     CSVFormat.DEFAULT.withHeader("ip", "city_name", "region_name"));
 
             //Writing IP in the generated CSV file
             hm.forEach((key,value)->{
                 if (value!="-") {
+                    String ip = null,city = null,region = null;
                     String[] ippro = key.split(":");
+                    ip=ippro[0];
+                    if (lLocation.containsKey(value))
+                        city = lLocation.get(value);
+                    if (lLocation.containsKey(ippro[1]))
+                        region = lLocation.get(ippro[1]);
                     try {
-                        csvPrinter.printRecord(ippro[0], value, ippro[1]);
+                        csvPrinter.printRecord(ip, city, region);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
