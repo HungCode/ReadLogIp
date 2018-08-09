@@ -31,7 +31,9 @@ public class App {
 
     public static void main(String[] args) {
         repairDataFromParquetFileLocal(args[0]);
+//        repairDataFromParquetFileLocal("/home/hung/Downloads/parquet_logfile_at_14h_00.snap");
     }
+
 
     //  Loc du lieu tu mot file parquet tren server roi ghi du lieu ra file csv gom co ip, city, region
     private static  void repairDataFromParquetFileLocal(String filePath){
@@ -39,8 +41,49 @@ public class App {
                 .builder()
                 .appName("Connect Server")
                 .config("spark.sql.parquet.binaryAsString", "true")
+//                .config("spark.master","local")
                 .config("spark.yarn.access.hadoopFileSystems", "hdfs://192.168.23.200:9000")
                 .getOrCreate();
+
+        //Du lieu ko chuan
+        //province
+        HashMap<String,String> lLocation = new HashMap<>();
+        lLocation.put("Bac Kan Province","Bac Kan");
+        lLocation.put("Binh Dinh Province","Binh Dinh");
+        lLocation.put("Bac Ninh Province","Bac Ninh");
+        lLocation.put("An Giang Province","An Giang");
+        lLocation.put("Binh Thuan Province","Binh Thuan");
+        lLocation.put("Djak Lak Province","Dak Lak");
+        lLocation.put("Djong Thap Province","Dong Thap");
+        lLocation.put("Gia Lai Province","Gia Lai");
+        lLocation.put("Ha Tinh Province","Ha Tinh");
+        lLocation.put("Haiphong","Hai Phong");
+        lLocation.put("Hanoi","Ha Noi");
+        lLocation.put("Hung Yen Province","Hung Yen");
+        lLocation.put("Khanh Hoa Province","Khanh Hoa");
+        lLocation.put("Kon Tum Province","Kon Tum");
+        lLocation.put("Lam Djong","Lam Dong");
+        lLocation.put("Long An Province","Long An");
+        lLocation.put("Ninh Binh Province","Ninh Binh");
+        lLocation.put("Ninh Thuan Province","Ninh Thuan");
+        lLocation.put("Phu Tho Province","Phu Tho");
+        lLocation.put("Phu Yen Province","Phu Yen");
+        lLocation.put("Quang Binh Province","Quang Binh");
+        lLocation.put("Quang Nam Province","Quang Nam");
+        lLocation.put("Quang Tri Province","Quang Tri");
+        lLocation.put("Tay Ninh Province","Tay Ninh");
+        lLocation.put("Vinh Phuc Province","Vinh Phuc");
+
+        //city
+        lLocation.put("Chau Djoc","Chau Doc");
+        lLocation.put("Djien Bien Phu","Dien Bien Phu");
+        lLocation.put("Djong Ha","Dong Ha");
+        lLocation.put("Djong Hoi","Dong Hoi");
+        lLocation.put("Phan Rangâ€“Thap Cham","Phan Rang-Thap Cham");
+        lLocation.put("Quang Tri Province","Quang Tri");
+        lLocation.put("Sa Djec","Sa Dec");
+        lLocation.put("Tam Djiep","Tam Diep");
+        lLocation.put("Nam Djinh","Nam Dinh");
 
         Dataset<Row> logDF = spark.read().parquet(filePath);
         Set<String> ipList = new HashSet<>();
@@ -64,38 +107,7 @@ public class App {
 //        list1.show();
         Dataset<Row> data1 = list1.join(finalSet,finalSet.col("ip").equalTo(list1.col("ip"))).where("count=1");
         Dataset<Row> data2 = list1.join(finalSet,finalSet.col("ip").equalTo(list1.col("ip"))).where("count=2");
-//        data1.show(1000,false);
-//        data2.show(1000,false);
 
-
-
-    /*
-        //loc data1
-        data1.foreach(row -> {
-            String ip = row.getString(0);
-            String location = row.getString(4);
-            String[] s = location.split(",");
-            String key;
-            if (s.length>2)
-                key=ip+":"+s[1];
-            else key = ip+":"+s[0];
-            if (hm.containsKey(key) && hm.get(key)!=s[0]) hm.put(key,"-");
-            else hm.put(key,s[0]);
-        });
-
-
-        data2.foreach(row -> {
-            String ip = row.getString(0);
-            String location = row.getString(4);
-            String[] s = location.split(",");
-            String key;
-            if (s.length>2)
-                key=ip+":"+s[1];
-            else key = ip+":"+s[0];
-            if (hm.containsKey(key) && hm.get(key)!=s[0]) hm.put(key,"-");
-            else hm.put(key,s[0]);
-        });
-    */
 
         // viet lai add hm
         data1.foreach(row -> {
@@ -110,8 +122,8 @@ public class App {
             }
             if (s.length==2){
                 key = ip + ":" + s[0];
-                if (hm2.containsKey(key) && hm2.get(key) != s[0]) hm2.put(key, "-");
-                else hm2.put(key, s[0]);
+                if (hm.containsKey(key) && hm.get(key) != s[0]) hm.put(key, "-");
+                else hm.put(key, s[0]);
             }
         });
         data2.foreach(row -> {
@@ -121,8 +133,8 @@ public class App {
             String key;
             if (s.length==3) {
                 key = ip + ":" + s[1];
-                if (hm.containsKey(key) && hm.get(key) != s[0]) hm.put(key, "-");
-                else hm.put(key, s[0]);
+                if (hm2.containsKey(key) && hm2.get(key) != s[0]) hm2.put(key, "-");
+                else hm2.put(key, s[0]);
             }
             if (s.length==2){
                 key = ip + ":" + s[0];
@@ -136,8 +148,23 @@ public class App {
                 hm.put(ip_prov,city);
         });
 
+        HashMap<String,String> lLocEnd = new HashMap<>();//(ip,city+pro)
+        hm.forEach((key,value)->{
+            String ip,city,region;
+            String[] ip_pro = key.split(":");
+            ip = ip_pro[0];
+            city = value;
+            region = ip_pro[1];
+            if (lLocation.containsKey(city))
+                city = lLocation.get(value);
+            if (lLocation.containsKey(region))
+                region = lLocation.get(ip_pro[1]);
+            if (lLocEnd.containsKey(ip) && lLocEnd.get(ip)!=city+":"+region)
+                lLocEnd.put(ip,"-");
+            else lLocEnd.put(ip,city+":"+region);
+        });
 
-        cvsWriter(hm);
+        cvsWriter(lLocEnd);
 
         spark.stop();
     }
@@ -148,45 +175,6 @@ public class App {
             //We have to create the CSVPrinter class object
             LocalDate today = LocalDate.now();
 
-            // Nhung tinh co ten chua chuan(co chua province hay sai ki tu)
-            HashMap<String,String> lLocation = new HashMap<>();
-            lLocation.put("Bac Kan Province","Bac Kan");
-            lLocation.put("Binh Dinh Province","Binh Dinh");
-            lLocation.put("Bac Ninh Province","Bac Ninh");
-            lLocation.put("An Giang Province","An Giang");
-            lLocation.put("Binh Thuan Province","Binh Thuan");
-            lLocation.put("Djak Lak Province","Dak Lak");
-            lLocation.put("Djong Thap Province","Dong Thap");
-            lLocation.put("Gia Lai Province","Gia Lai");
-            lLocation.put("Ha Tinh Province","Ha Tinh");
-            lLocation.put("Haiphong","Hai Phong");
-            lLocation.put("Hanoi","Ha Noi");
-            lLocation.put("Hung Yen Province","Hung Yen");
-            lLocation.put("Khanh Hoa Province","Khanh Hoa");
-            lLocation.put("Kon Tum Province","Kon Tum");
-            lLocation.put("Lam Djong","Lam Dong");
-            lLocation.put("Long An Province","Long An");
-            lLocation.put("Ninh Binh Province","Ninh Binh");
-            lLocation.put("Ninh Thuan Province","Ninh Thuan");
-            lLocation.put("Phu Tho Province","Phu Tho");
-            lLocation.put("Phu Yen Province","Phu Yen");
-            lLocation.put("Quang Binh Province","Quang Binh");
-            lLocation.put("Quang Nam Province","Quang Nam");
-            lLocation.put("Quang Tri Province","Quang Tri");
-            lLocation.put("Tay Ninh Province","Tay Ninh");
-            lLocation.put("Vinh Phuc Province","Vinh Phuc");
-
-            //city
-            lLocation.put("Chau Djoc","Chau Doc");
-            lLocation.put("Djien Bien Phu","Dien Bien Phu");
-            lLocation.put("Djong Ha","Dong Ha");
-            lLocation.put("Djong Hoi","Dong Hoi");
-            lLocation.put("Phan Rangâ€“Thap Cham","Phan Rang-Thap Cham");
-            lLocation.put("Quang Tri Province","Quang Tri");
-            lLocation.put("Sa Djec","Sa Dec");
-            lLocation.put("Tam Djiep","Tam Diep");
-
-
             // Ghi file
 
             Writer writer = Files.newBufferedWriter(Paths.get("ipgoogle_"+today.getDayOfMonth()+"_"+today.getMonth()+"_"+today.getYear()+".csv"));
@@ -195,16 +183,10 @@ public class App {
 
             //Writing IP in the generated CSV file
             hm.forEach((key,value)->{
-                if (value!="-") {
-                    String ip = null,city = null,region = null;
-                    String[] ippro = key.split(":");
-                    ip=ippro[0];
-                    if (lLocation.containsKey(value))
-                        city = lLocation.get(value);
-                    if (lLocation.containsKey(ippro[1]))
-                        region = lLocation.get(ippro[1]);
+                String[] s = value.split(":");
+                if (s[0]!="-") {
                     try {
-                        csvPrinter.printRecord(ip, city, region);
+                        csvPrinter.printRecord(key, s[0], s[1]);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
